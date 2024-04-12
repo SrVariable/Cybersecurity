@@ -24,11 +24,13 @@ class SYMMETRIC_CRYPTOGRAPHY:
 	Cipher your name using AES 128 CTR mode and store it in a binary file A
 	"""
 
-	def cipher_aes128_ctr(self, name: str, key: bytes, filename: str):
+	def cipher_aes128_ctr(self, name: str, nonce_length: int, key: bytes,
+					   filename: str):
 		data = name if name else input('Enter the data to be ciphered: ')
 		data = data.encode('utf-8')
 		print('Encrypting the data')
-		cipher = AES.new(key, AES.MODE_CTR)
+		cipher = AES.new(key, AES.MODE_CTR,
+				   nonce=get_random_bytes(nonce_length))
 		with open(filename, 'wb') as file:
 			file.write(cipher.nonce)
 			file.write(cipher.encrypt(data))
@@ -38,9 +40,10 @@ class SYMMETRIC_CRYPTOGRAPHY:
 	Load the file A and decipher the data using AES 128 CTR mode
 	"""
 
-	def decipher_aes128_ctr(self, name: str, key: bytes, filename: str):
+	def decipher_aes128_ctr(self, name: str, nonce_length: int, key: bytes,
+						 filename: str):
 		with open(filename, 'rb') as file:
-			nonce = file.read(int(len(key) / 2))
+			nonce = file.read(nonce_length)
 			cipher_text = file.read()
 			print('Decrypting the data')
 			cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
@@ -99,7 +102,7 @@ class ASYMMETRIC_CRYPTOGRAPHY:
 	Load the file B and verify the signature is the same
 	"""
 
-	def verify_signature(self, name: str, filename2: str):
+	def verify_signature_rsa(self, name: str, filename2: str):
 		with open(filename2, 'rb') as file:
 			signature = file.read()
 			data = name if name else input('Enter the data to be verified: ')
@@ -120,8 +123,8 @@ class ASYMMETRIC_CRYPTOGRAPHY:
 	def verify_hmac_sha256(self, name: str, key: bytes, filename3: str):
 		with open(filename3, 'rb') as file:
 			data = name if name else input('Enter the data to be verified: ')
-			print('Verifying the hash')
 			data = data.encode('utf-8')
+			print('Verifying the hash')
 			hash = HMAC.new(key, digestmod=SHA256)
 			hash.update(data)
 			try:
@@ -132,21 +135,22 @@ class ASYMMETRIC_CRYPTOGRAPHY:
 				print(f'The data is invalid')
 
 def main():
-	name = 'Rojohn Ibana Bañares'
-	password = 'SamsungUmaCybersecurity2024'
-	key = get_random_bytes(16)
+	name = 'Rojohn Ibana Bañares' # Set to None to input data
+	password = 'SamsungUmaCybersecurity2024' # Set to None to input data
+	aes_key = get_random_bytes(16)
+	hmac_key = get_random_bytes(32)
+	nonce_length = 8
 	filename = 'A'
 	filename2 = 'B'
 	filename3 = 'C'
 	part1 = SYMMETRIC_CRYPTOGRAPHY()
 	part2 = ASYMMETRIC_CRYPTOGRAPHY()
-
-	part1.cipher_aes128_ctr(name, key, filename)
-	part1.decipher_aes128_ctr(name, key, filename)
-	part2.signature_rsa(name, filename2, password)
-	part2.hmac_sha256(name, key, filename3)
-	part2.verify_signature(name, filename2)
-	part2.verify_hmac_sha256(name, key, filename3)
+	part1.cipher_aes128_ctr(name, nonce_length, aes_key, filename)
+	part1.decipher_aes128_ctr(name, nonce_length, aes_key, filename)
+	part2.signature_rsa(name, filename2,  password)
+	part2.hmac_sha256(name, hmac_key, filename3)
+	part2.verify_signature_rsa(name, filename2)
+	part2.verify_hmac_sha256(name, hmac_key, filename3)
 
 if __name__ == '__main__':
 	main()
