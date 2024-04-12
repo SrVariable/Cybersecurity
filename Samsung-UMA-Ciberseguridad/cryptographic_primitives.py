@@ -10,8 +10,6 @@ https://www.pycryptodome.org/src/signature/pkcs1_pss#rsa-pss
 https://www.pycryptodome.org/src/hash/hmac
 """
 
-import json
-from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.PublicKey import RSA
@@ -28,15 +26,12 @@ class SYMMETRIC_CRYPTOGRAPHY:
 
 	def cipher_aes128_ctr(self, name: str, key: bytes, filename: str):
 		data = name if name else input('Enter the data to be ciphered: ')
-		print('Encrypting the data')
 		data = data.encode('utf-8')
+		print('Encrypting the data')
 		cipher = AES.new(key, AES.MODE_CTR)
-		cipher_text_bytes = cipher.encrypt(data)
-		nonce = b64encode(cipher.nonce).decode('utf-8')
-		cipher_text = b64encode(cipher_text_bytes).decode('utf-8')
-		result = json.dumps({'nonce':nonce, 'ciphertext':cipher_text})
 		with open(filename, 'wb') as file:
-			file.write(result.encode('utf-8'))
+			file.write(cipher.nonce)
+			file.write(cipher.encrypt(data))
 		print('The data has been encrypted')
 
 	""" Exercise A.1.b
@@ -45,11 +40,9 @@ class SYMMETRIC_CRYPTOGRAPHY:
 
 	def decipher_aes128_ctr(self, name: str, key: bytes, filename: str):
 		with open(filename, 'rb') as file:
+			nonce = file.read(int(len(key) / 2))
+			cipher_text = file.read()
 			print('Decrypting the data')
-			result = file.read()
-			b64 = json.loads(result.decode('utf-8'))
-			nonce = b64decode(b64['nonce'])
-			cipher_text = b64decode(b64['ciphertext'])
 			cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
 			result = cipher.decrypt(cipher_text).decode('utf-8')
 			print(f'The decrypted text is: {result}')
@@ -97,13 +90,13 @@ class ASYMMETRIC_CRYPTOGRAPHY:
 		print('Hashing the data')
 		hash = HMAC.new(key, digestmod=SHA256)
 		hash.update(data)
-		result = hash.hexdigest()
+		result = hash.digest()
 		with open(filename3, 'wb') as file:
-			file.write(result.encode('utf-8'))
+			file.write(result)
 		print('The data has been hashed')
 
 	""" Exercise A.2.c
-	Load the file B and verify the signature is ok
+	Load the file B and verify the signature is the same
 	"""
 
 	def verify_signature(self, name: str, filename2: str):
@@ -121,7 +114,7 @@ class ASYMMETRIC_CRYPTOGRAPHY:
 				print('The signature is not authentic')
 
 	""" Exercise A.2.d
-	Load the file C and verify the hash is ok.
+	Load the file C and verify the hash is the same.
 	"""
 
 	def verify_hmac_sha256(self, name: str, key: bytes, filename3: str):
@@ -133,7 +126,7 @@ class ASYMMETRIC_CRYPTOGRAPHY:
 			hash.update(data)
 			try:
 				mac = file.read()
-				hash.hexverify(mac)
+				hash.verify(mac)
 				print(f'The data is valid')
 			except ValueError:
 				print(f'The data is invalid')
